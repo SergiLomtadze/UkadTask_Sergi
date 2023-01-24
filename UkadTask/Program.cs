@@ -35,7 +35,6 @@ foreach (XmlNode node in xmlNodes)
         xmlList.Add(new Url { UrlName = node.InnerText.Replace("\n", "").Trim(), ElapsedTime = stopwatch.ElapsedTicks });
     }    
 }
-Console.WriteLine($"Urls found in Sitemap.mxl: {xmlList.Count}");
 
 HtmlWeb web = new HtmlWeb();
 HtmlDocument htmlDoc = web.Load(urlName);
@@ -54,7 +53,6 @@ foreach (HtmlNode node in htmlNodes)
         webList.Add(new Url { UrlName = node.Attributes["href"].Value.TrimEnd('/'), ElapsedTime = stopwatch.ElapsedTicks });
     }
 }
-Console.WriteLine($"Urls(html documents) found after crawling a website: {webList.Count}");
 
 var mergedUrls = new List<Url>();
 var xmlExistWebNot = new List<Url>();
@@ -80,22 +78,27 @@ foreach (Url webUrl in webList)
     }
 }
 
-Console.WriteLine("Merged List: \n");
+Console.WriteLine("Merged List:");
 foreach (Url url in mergedUrls)
 {
     Console.WriteLine($"{url.UrlName} {url.ElapsedTime}");
 }
+Console.WriteLine("\n");
 
-Console.WriteLine("Urls FOUNDED IN SITEMAP.XML but not founded after crawling a web site \n");
+Console.WriteLine("Urls FOUNDED IN SITEMAP.XML but not founded after crawling a web site:");
 foreach (var url in xmlExistWebNot)
 {
     Console.WriteLine($"{url.UrlName} {url.ElapsedTime}");
 }
+Console.WriteLine("\n");
 
-Console.WriteLine("Urls FOUNDED BY CRAWLING THE WEBSITE but not in sitemap.xml \n");
+Console.WriteLine("Urls FOUNDED BY CRAWLING THE WEBSITE but not in sitemap.xml");
 foreach (var url in webExistXmlNot)
 {
     Console.WriteLine($"{url.UrlName} {url.ElapsedTime}");
 }
+Console.WriteLine("\n");
 
+Console.WriteLine($"Urls(html documents) found after crawling a website: {webList.Count} \n");
+Console.WriteLine($"Urls found in sitemap: {webList.Count} \n");
 Console.ReadLine();
