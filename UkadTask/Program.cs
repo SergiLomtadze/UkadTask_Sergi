@@ -79,21 +79,21 @@ foreach (Url webUrl in webList)
 }
 
 Console.WriteLine("Merged List:");
-foreach (Url url in mergedUrls)
+foreach (Url url in mergedUrls.OrderBy(x => x.ElapsedTime))
 {
     Console.WriteLine($"{url.UrlName} {url.ElapsedTime}");
 }
 Console.WriteLine("\n");
 
 Console.WriteLine("Urls FOUNDED IN SITEMAP.XML but not founded after crawling a web site:");
-foreach (var url in xmlExistWebNot)
+foreach (var url in xmlExistWebNot.OrderBy(x => x.ElapsedTime))
 {
     Console.WriteLine($"{url.UrlName} {url.ElapsedTime}");
 }
 Console.WriteLine("\n");
 
 Console.WriteLine("Urls FOUNDED BY CRAWLING THE WEBSITE but not in sitemap.xml");
-foreach (var url in webExistXmlNot)
+foreach (var url in webExistXmlNot.OrderBy(x => x.ElapsedTime))
 {
     Console.WriteLine($"{url.UrlName} {url.ElapsedTime}");
 }
