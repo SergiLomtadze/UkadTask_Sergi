@@ -1,104 +1,73 @@
-﻿using System.Diagnostics;
-using System.Xml;
-using System;
-using UkadTask;
-using HtmlAgilityPack;
-using static System.Net.Mime.MediaTypeNames;
-using System.Net.Http;
-using Microsoft.AspNetCore.Http;
-using System.Reflection;
+﻿using UkadTask;
+using UkadTask.Models;
 
-//Console.Write("Please enter url address: ");
-//string urlName = Console.ReadLine();
-//string urlName = "https://www.ambebi.ge/";
-string urlName = "https://www.github.com/";
+var urlValidator = new UrlValidator();
+var webPage = new WebPage();
 
+Console.Write("Please enter url: ");
+string inputedLine = Console.ReadLine();
 
-Stopwatch stopwatch = new Stopwatch();
-List<Url> webList = new List<Url>();
-
-XmlDocument xmlDoc = new XmlDocument();
-List<Url> xmlList = new List<Url>();
-
-//Load relative path
-var fileName = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), @"Sitemap.xml");
-xmlDoc.Load(fileName);
-
-XmlNodeList xmlNodes = xmlDoc.SelectNodes("/root/url");
-
-foreach (XmlNode node in xmlNodes)
+while (!urlValidator.IsValid(inputedLine))
 {
-    stopwatch.Start();
-    if (node.InnerText.Contains("/"))
-    {
-        stopwatch.Start();
-        xmlList.Add(new Url { UrlName = node.InnerText.Replace("\n", "").Trim(), ElapsedTime = stopwatch.ElapsedTicks });
-    }    
+    Console.Write("Inputed line is not valid webadress. Please enter valid url: ");
+    inputedLine = Console.ReadLine();
 }
 
-HtmlWeb web = new HtmlWeb();
-HtmlDocument htmlDoc = web.Load(urlName);
+webPage.UrlPath = inputedLine;
+webPage.WebParse();
 
-//Use the SelectNodes method to find all the "a" elements in the document:
-HtmlNodeCollection htmlNodes = htmlDoc.DocumentNode.SelectNodes("//a[@href]");
 
-//Iterate through the nodes and check the "href" attribute of each node to see if it starts with "http"
-foreach (HtmlNode node in htmlNodes)
+
+if (urlValidator.IsValid($"{webPage.UrlPath}/sitemap.xml"))
 {
-    stopwatch.Start();
-    //if (node.Attributes["href"].Value.Contains("http"))
-    if (node.OuterHtml.Contains("/"))
+    webPage.SiteMapPath = $"{webPage.UrlPath}/sitemap.xml";
+    webPage.SiteMapParse();
+
+    if (webPage.SiteMapUrls.Count() > 0)
     {
-        stopwatch.Stop();
-        webList.Add(new Url { UrlName = node.Attributes["href"].Value.TrimEnd('/'), ElapsedTime = stopwatch.ElapsedTicks });
+        var mergedUrls = new List<UrlModel>();
+        var siteMapYesWebNo = new List<UrlModel>();
+        var webYesSiteMapNo = new List<UrlModel>();
+
+        foreach (UrlModel siteMapUrl in webPage.SiteMapUrls)
+        {
+            mergedUrls.Add(siteMapUrl);
+            if (!webPage.WebUrls.Select(x => x.Url).Contains(siteMapUrl.Url))
+            {
+                siteMapYesWebNo.Add(siteMapUrl);
+            }
+        }
+        foreach (UrlModel webUrl in webPage.WebUrls)
+        {
+            if (!webPage.SiteMapUrls.Select(x => x.Url).Contains(webUrl.Url))
+            {
+                mergedUrls.Add(webUrl);
+                webYesSiteMapNo.Add(webUrl);
+            }
+        }
+
+        Print(mergedUrls, "Merged List:");
+        Print(siteMapYesWebNo, "Urls FOUNDED IN SITEMAP.XML but not founded after crawling a web site:");
+        Print(webYesSiteMapNo, "Urls FOUNDED BY CRAWLING THE WEBSITE but not in sitemap.xml");
+
+    }
+}
+else 
+{
+    if (webPage.WebUrls.Count() > 0)
+    {
+        Print(webPage.WebUrls, "No sitemap.xml found \n WebPage url list:");
     }
 }
 
-var mergedUrls = new List<Url>();
-var xmlExistWebNot = new List<Url>();
-var webExistXmlNot = new List<Url>();
+Console.ReadLine(); 
 
-foreach (Url xmlUrl in xmlList)
+void Print(List<UrlModel> list, string title)
 {
-    mergedUrls.Add(xmlUrl);
-    if (!webList.Select(x => x.UrlName).Contains(xmlUrl.UrlName))
+    Console.WriteLine(title);
+    foreach (var item in list.OrderBy(x => x.ResponseTime))
     {
-        xmlExistWebNot.Add(xmlUrl);
+        Console.WriteLine($"{item.Url}, Response time(ms): {item.ResponseTime}");
     }
+    Console.WriteLine("\n");
 }
-foreach (Url webUrl in webList)
-{
-    if (!xmlList.Select(x => x.UrlName).Contains(webUrl.UrlName))
-    {
-        mergedUrls.Add(webUrl);
-    }
-    if (!xmlList.Select(x => x.UrlName).Contains(webUrl.UrlName))
-    {
-        webExistXmlNot.Add(webUrl);
-    }
-}
-
-Console.WriteLine("Merged List:");
-foreach (Url url in mergedUrls.OrderBy(x => x.ElapsedTime))
-{
-    Console.WriteLine($"{url.UrlName} {url.ElapsedTime}");
-}
-Console.WriteLine("\n");
-
-Console.WriteLine("Urls FOUNDED IN SITEMAP.XML but not founded after crawling a web site:");
-foreach (var url in xmlExistWebNot.OrderBy(x => x.ElapsedTime))
-{
-    Console.WriteLine($"{url.UrlName} {url.ElapsedTime}");
-}
-Console.WriteLine("\n");
-
-Console.WriteLine("Urls FOUNDED BY CRAWLING THE WEBSITE but not in sitemap.xml");
-foreach (var url in webExistXmlNot.OrderBy(x => x.ElapsedTime))
-{
-    Console.WriteLine($"{url.UrlName} {url.ElapsedTime}");
-}
-Console.WriteLine("\n");
-
-Console.WriteLine($"Urls(html documents) found after crawling a website: {webList.Count} \n");
-Console.WriteLine($"Urls found in sitemap: {webList.Count} \n");
-Console.ReadLine();
